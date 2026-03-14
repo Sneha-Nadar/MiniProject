@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from datetime import datetime
 
-FILE_NAME = f"attendance_{date}.xlsx"
+FILE_NAME = "attendance.xlsx"
 
 def mark_attendance(name):
 
