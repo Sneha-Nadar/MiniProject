@@ -5,7 +5,7 @@ from collections import Counter
 from app.ai.face_detector import detect_faces
 from app.ai.face_encoder import encode_faces
 from app.ai.face_matcher import find_best_match
-from app.attendance.attendance_service import mark_attendance
+from app.attendance.attendance_services import mark_attendance
 
 
 VIDEO_PATH = "data/videos/lab_cctv.mp4"

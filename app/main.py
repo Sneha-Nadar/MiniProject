@@ -75,16 +75,16 @@ def get_students():
 # -----------------------------
 # Start Live Recognition
 # -----------------------------
+import sys
+
 @app.post("/recognize-live")
 def recognize_live():
 
     subprocess.Popen(
-        ["python", "-m", "scripts.recognize_live"]
+        [sys.executable, "-m", "scripts.recognize_live"]
     )
 
-    return JSONResponse(
-        {"status": "Live recognition started"}
-    )
+    return {"status": "Live recognition started"}
 
 
 # -----------------------------
