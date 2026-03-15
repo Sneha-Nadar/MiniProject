@@ -1,6 +1,14 @@
 import cv2
 import pickle
 from collections import Counter
+import time
+
+start = time.time()
+
+while True:
+
+    if time.time() - start > 10:
+        break
 
 from app.ai.face_detector import detect_faces
 from app.ai.face_encoder import encode_faces
