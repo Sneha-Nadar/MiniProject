@@ -3,13 +3,6 @@ import pickle
 from collections import Counter
 import time
 
-start = time.time()
-
-while True:
-
-    if time.time() - start > 10:
-        break
-
 from app.ai.face_detector import detect_faces
 from app.ai.face_encoder import encode_faces
 from app.ai.face_matcher import find_best_match
@@ -23,14 +16,20 @@ with open("data/encodings/encodings.pkl", "rb") as f:
 
 cap = cv2.VideoCapture(0)
 
-print("🎥 Camera started. Press ESC to exit.")
+print("🎥 Camera started. Running for 10 seconds...")
 
+start_time = time.time()
 
 recent_names = []
 FRAME_HISTORY = 10
 
 
 while True:
+
+    # ⏱ Stop after 10 seconds
+    if time.time() - start_time > 10:
+        print("⏹ Camera session finished.")
+        break
 
     ret, frame = cap.read()
 
