@@ -37,7 +37,7 @@ while True:
         break
 
     # Resize frame for stability
-    frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
+    frame = cv2.resize(frame, (960, 720))
 
     faces = detect_faces(frame)
     encodings = encode_faces(frame, faces)
