@@ -16,7 +16,7 @@ with open("data/encodings/encodings.pkl", "rb") as f:
 
 cap = cv2.VideoCapture(0)
 
-print("🎥 Camera started. Running for 10 seconds...")
+print("🎥 Camera started. Running for 60 seconds...")
 
 start_time = time.time()
 
@@ -27,7 +27,7 @@ FRAME_HISTORY = 10
 while True:
 
     # ⏱ Stop after 10 seconds
-    if time.time() - start_time > 10:
+    if time.time() - start_time > 60:
         print("⏹ Camera session finished.")
         break
 
