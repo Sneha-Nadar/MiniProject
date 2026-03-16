@@ -42,14 +42,17 @@ async def dashboard(request: Request):
 @app.get("/attendance")
 def get_attendance():
 
+    from datetime import datetime
+    import os
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    file_path = f"data/attendance/{today}/attendance.xlsx"
+
     try:
-
-        df = pd.read_excel("attendance.xlsx")
-
+        df = pd.read_excel(file_path)
         return df.to_dict(orient="records")
-
     except:
-
         return []
 
 
