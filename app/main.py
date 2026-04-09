@@ -7,10 +7,19 @@ import sys
 import shutil
 import os
 
+# Absolute base path — works from any directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 app = FastAPI(title="Smart Attendance System")
 
-templates = Jinja2Templates(directory="app/frontend/templates")
-app.mount("/static", StaticFiles(directory="app/frontend/static"), name="static")
+templates = Jinja2Templates(
+    directory=os.path.join(BASE_DIR, "app", "frontend", "templates")
+)
+app.mount(
+    "/static",
+    StaticFiles(directory=os.path.join(BASE_DIR, "app", "frontend", "static")),
+    name="static"
+)
 
 
 # ──────────────────────────────────────────────
@@ -30,7 +39,7 @@ def get_attendance():
     import pandas as pd
 
     today     = datetime.now().strftime("%Y-%m-%d")
-    file_path = f"data/attendance/{today}/attendance.xlsx"
+    file_path = os.path.join(BASE_DIR, "data", "attendance", today, "attendance.xlsx")
 
     try:
         if not os.path.exists(file_path):
@@ -47,7 +56,8 @@ def get_attendance():
 # ──────────────────────────────────────────────
 @app.get("/students")
 def get_students():
-    dataset_path = "data/datasets"
+    dataset_path = os.path.join(BASE_DIR, "data", "datasets")
+
     try:
         students = [
             name for name in os.listdir(dataset_path)
@@ -60,7 +70,7 @@ def get_students():
 
 
 # ──────────────────────────────────────────────
-# Current lecture / slot info  (for dashboard)
+# Current lecture / slot info  (for dashboard banner)
 # ──────────────────────────────────────────────
 @app.get("/current-lecture")
 def current_lecture():
@@ -70,12 +80,14 @@ def current_lecture():
 
 
 # ──────────────────────────────────────────────
-# Live recognition  (runs in background thread)
+# Live recognition  (runs in background)
 # ──────────────────────────────────────────────
 def _run_live():
-    """Background task — runs recognize_live session."""
     import subprocess
-    subprocess.Popen([sys.executable, "-m", "scripts.recognize_live"])
+    subprocess.Popen(
+        [sys.executable, "-m", "scripts.recognize_live"],
+        cwd=BASE_DIR
+    )
 
 @app.post("/recognize-live")
 def recognize_live(background_tasks: BackgroundTasks):
@@ -84,17 +96,20 @@ def recognize_live(background_tasks: BackgroundTasks):
 
 
 # ──────────────────────────────────────────────
-# Upload CCTV video  (saves file, then processes)
+# Upload CCTV video  (saves file, then processes it)
 # ──────────────────────────────────────────────
 def _process_video(video_path: str):
-    """Background task — processes a specific video file."""
     import subprocess
-    subprocess.Popen([sys.executable, "-m", "scripts.process_cctv_video", video_path])
+    subprocess.Popen(
+        [sys.executable, "-m", "scripts.process_cctv_video", video_path],
+        cwd=BASE_DIR
+    )
 
 @app.post("/upload-video")
 async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    os.makedirs("data/video", exist_ok=True)
-    video_path = f"data/video/{file.filename}"
+    video_dir  = os.path.join(BASE_DIR, "data", "video")
+    os.makedirs(video_dir, exist_ok=True)
+    video_path = os.path.join(video_dir, file.filename)
 
     with open(video_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
