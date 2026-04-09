@@ -3,227 +3,306 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart AI Attendance</title>
+  <title>Smart Attendance | FCRIT</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Open Sans', sans-serif; background: #0f172a; color: #e2e8f0; margin:0; padding:0; }
+
+    .fcrit-header {
+      background: #fff; border-bottom: 4px solid #8B1A1A;
+      padding: 10px 32px; display: flex; align-items: center; gap: 18px;
+    }
+    .fcrit-header img { width: 72px; height: 72px; object-fit: contain; }
+    .fcrit-header h1 { font-family: 'Merriweather', serif; font-size: 16px; color: #8B1A1A; margin: 0 0 2px 0; }
+    .fcrit-header p  { font-size: 11px; color: #555; margin: 0; }
+
+    .fcrit-nav {
+      background: #8B1A1A; padding: 9px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .fcrit-nav .title { color: #fff; font-weight: 600; font-size: 14px; }
+    .fcrit-nav .dept  { color: #f5c842; font-size: 12px; }
+    .logout-btn {
+      background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 5px 16px; border-radius: 4px; font-size: 12px;
+      font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.28); }
+
+    .content { max-width: 1280px; margin: 0 auto; padding: 24px 28px; }
+
+    .lecture-banner {
+      background: #1e293b; border: 1px solid #8B1A1A;
+      border-left: 5px solid #8B1A1A; border-radius: 8px;
+      padding: 16px 24px; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px;
+    }
+    .lbl      { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .lec-val  { font-size: 26px; font-weight: 700; color: #f5c842; font-family: 'Merriweather', serif; }
+    .lec-sub  { font-size: 13px; color: #cbd5e1; margin-top: 2px; }
+    .slot-val { font-size: 26px; font-weight: 700; color: #4ade80; text-align: right; }
+    .slot-hint{ font-size: 11px; color: #64748b; text-align: right; margin-top: 2px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: #1e293b; border: 1px solid #334155;
+      border-top: 3px solid #8B1A1A; border-radius: 8px;
+      padding: 20px; text-align: center;
+    }
+    .stat-lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .stat-val { font-size: 32px; font-weight: 700; color: #f5c842; }
+
+    .action-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
+    .action-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; }
+    .action-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 6px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s; font-family: 'Open Sans', sans-serif;
+    }
+    .btn:hover  { opacity: 0.88; }
+    .btn:active { transform: scale(0.98); }
+    .btn-red    { background: #dc2626; color: #fff; }
+    .btn-gold   { background: #d97706; color: #fff; }
+    .btn-purple { background: #7c3aed; color: #fff; }
+    .btn-green  { background: #16a34a; color: #fff; }
+
+    .file-input {
+      width: 100%; background: #0f172a; border: 1px solid #334155;
+      color: #94a3b8; padding: 8px 10px; border-radius: 6px;
+      font-size: 12px; margin-bottom: 10px; cursor: pointer;
+    }
+    .action-hint { font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.5; }
+
+    .attendance-section { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; }
+    .att-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .att-header h2 { font-size: 16px; font-weight: 600; color: #f5c842; }
+    .att-controls { display: flex; gap: 10px; align-items: center; }
+
+    .date-input {
+      background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+      padding: 7px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; outline: none;
+    }
+    .date-input:focus { border-color: #8B1A1A; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { border-bottom: 2px solid #8B1A1A; }
+    thead th { padding: 10px 12px; text-align: left; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; }
+    tbody tr { border-bottom: 1px solid #1e293b; transition: background 0.15s; }
+    tbody tr:hover { background: rgba(139,26,26,0.1); }
+    tbody td { padding: 10px 12px; }
+
+    .badge        { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+    .badge-lec    { background: #1e3a5f; color: #93c5fd; font-family: monospace; }
+    .badge-slot-a { background: #14532d; color: #86efac; }
+    .badge-slot-b { background: #3b0764; color: #c4b5fd; }
+    .roll  { color: #93c5fd; font-family: monospace; }
+    .subj  { color: #fde68a; }
+    .muted { color: #64748b; }
+    .empty { text-align: center; color: #475569; padding: 32px !important; }
+    .auto-tag { font-size: 11px; color: #475569; text-align: right; margin-top: 10px; }
+
+    .fcrit-footer {
+      background: #8B1A1A; text-align: center;
+      padding: 10px; color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 32px;
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
+<body>
 
-<div class="max-w-7xl mx-auto p-8">
-
-  <!-- Header -->
-  <h1 class="text-4xl font-bold text-center mb-2 text-cyan-400">
-    Smart AI Attendance System
-  </h1>
-  <p class="text-center text-gray-400 mb-8 text-sm">
-    Fr. C. Rodrigues Institute of Technology — Dept. of Information Technology
-  </p>
-
-  <!-- Current Lecture Banner -->
-  <div id="lectureBanner"
-       class="bg-gray-800 border border-cyan-700 rounded-xl p-4 mb-8 flex items-center justify-between">
+  <!-- FCRIT Header -->
+  <div class="fcrit-header">
+    <img src="/static/fcritlogo.png" alt="FCRIT Logo">
     <div>
-      <p class="text-gray-400 text-xs uppercase tracking-widest">Current Lecture</p>
-      <p id="lectureLabel" class="text-2xl font-bold text-cyan-400">--</p>
-      <p id="subjectLabel" class="text-gray-300 text-sm mt-1">--</p>
-    </div>
-    <div class="text-right">
-      <p class="text-gray-400 text-xs uppercase tracking-widest">Slot</p>
-      <p id="slotLabel" class="text-2xl font-bold text-green-400">--</p>
-      <p class="text-gray-500 text-xs mt-1">A = first 30 min &nbsp;|&nbsp; B = last 30 min</p>
-    </div>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-3 gap-6 mb-8">
-    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl text-center">
-      <h2 class="text-gray-400 text-sm mb-1">Total Students</h2>
-      <p id="studentsCount" class="text-3xl font-bold text-cyan-400">--</p>
-    </div>
-    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl text-center">
-      <h2 class="text-gray-400 text-sm mb-1">Present Today</h2>
-      <p id="detectedCount" class="text-3xl font-bold text-green-400">--</p>
-    </div>
-    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl text-center">
-      <h2 class="text-gray-400 text-sm mb-1">System Status</h2>
-      <p id="systemStatus" class="text-green-400 text-xl font-semibold">Ready</p>
-    </div>
-  </div>
-
-  <!-- Action Panels -->
-  <div class="grid grid-cols-2 gap-6 mb-8">
-
-    <!-- Live Recognition -->
-    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl">
-      <h2 class="text-xl mb-4 text-cyan-400 font-semibold">Live Recognition</h2>
-      <button onclick="startLive()"
-              class="bg-cyan-500 hover:bg-cyan-400 active:scale-95 px-6 py-3 rounded-lg
-                     text-black font-bold w-full transition">
-        Start Camera (60 sec)
-      </button>
-      <p class="text-gray-400 text-xs mt-3">
-        Opens webcam for 60 seconds and marks attendance for current lecture slot.
+      <h1>Fr. C. Rodrigues Institute of Technology, Vashi, Navi Mumbai</h1>
+      <p>Agnel Technical Education Complex, Sector 9-A, Vashi, Navi Mumbai — 400703</p>
+      <p style="color:#8B1A1A; font-weight:600; font-size:11px; margin-top:2px;">
+        An Autonomous Institute &amp; Permanently Affiliated to University of Mumbai
       </p>
     </div>
+  </div>
 
-    <!-- CCTV Upload -->
-    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl">
-      <h2 class="text-xl mb-4 text-purple-400 font-semibold">Process CCTV Video</h2>
-      <input type="file" id="videoFile" accept="video/*"
-             class="bg-gray-700 text-sm p-2 rounded-lg w-full mb-3 cursor-pointer">
-      <button onclick="uploadVideo()"
-              class="bg-purple-500 hover:bg-purple-400 active:scale-95 px-6 py-3 rounded-lg
-                     text-black font-bold w-full transition">
-        Upload &amp; Process Video
-      </button>
-      <p class="text-gray-400 text-xs mt-3">
-        Upload a recorded CCTV video — faces will be recognized and attendance marked.
-      </p>
+  <!-- Maroon Nav -->
+  <div class="fcrit-nav">
+    <span class="title">Smart Face Recognition Attendance System</span>
+    <span class="dept">Department of Information Technology — FH 2026</span>
+    <a href="/logout" class="logout-btn">Logout</a>
+  </div>
+
+  <div class="content">
+
+    <!-- Lecture Banner -->
+    <div class="lecture-banner">
+      <div>
+        <div class="lbl">Current Lecture</div>
+        <div class="lec-val" id="lectureLabel">--</div>
+        <div class="lec-sub" id="subjectLabel">--</div>
+      </div>
+      <div>
+        <div class="lbl" style="text-align:right">Active Slot</div>
+        <div class="slot-val" id="slotLabel">--</div>
+        <div class="slot-hint">A = first 30 min &nbsp;|&nbsp; B = last 30 min</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-lbl">Total Students</div>
+        <div class="stat-val" id="studentsCount">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Present Today</div>
+        <div class="stat-val" style="color:#4ade80" id="detectedCount">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">System Status</div>
+        <div class="stat-val" style="font-size:18px;color:#4ade80" id="systemStatus">Ready</div>
+      </div>
+    </div>
+
+    <!-- Action Panels -->
+    <div class="action-grid">
+      <div class="action-card">
+        <h3 style="color:#f87171">&#128247; Live Recognition</h3>
+        <button class="btn btn-red" onclick="startLive()">Start Camera (60 sec)</button>
+        <p class="action-hint">Opens webcam for 60 seconds and marks attendance for the current lecture slot.</p>
+      </div>
+      <div class="action-card">
+        <h3 style="color:#f5c842">&#128444; Upload Class Photo</h3>
+        <input type="file" id="imageFile" accept="image/*" class="file-input">
+        <button class="btn btn-gold" onclick="uploadImage()">Detect &amp; Mark Attendance</button>
+        <p class="action-hint">Upload a classroom photo — faces detected instantly and attendance marked.</p>
+      </div>
+      <div class="action-card">
+        <h3 style="color:#a78bfa">&#127909; Process CCTV Video</h3>
+        <input type="file" id="videoFile" accept="video/*" class="file-input">
+        <button class="btn btn-purple" onclick="uploadVideo()">Upload &amp; Process</button>
+        <p class="action-hint">Upload a recorded CCTV video — faces recognized frame by frame.</p>
+      </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="attendance-section">
+      <div class="att-header">
+        <h2>Attendance Log</h2>
+        <div class="att-controls">
+          <input type="date" id="datePicker" class="date-input">
+          <button class="btn btn-green" style="width:auto;padding:7px 18px"
+                  onclick="exportAttendance()">Export Excel</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Roll No</th><th>Name</th><th>Date</th>
+              <th>Time</th><th>Lecture</th><th>Slot</th><th>Subject</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTable">
+            <tr><td colspan="7" class="empty">No attendance recorded yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="auto-tag">Auto-refreshes every 3 seconds</p>
     </div>
 
   </div>
 
-  <!-- Attendance Table -->
-  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl text-green-400 font-semibold">Today's Attendance Log</h2>
-      <span class="text-gray-500 text-xs">Auto-refreshes every 3 seconds</span>
-    </div>
-
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm">
-        <thead>
-          <tr class="border-b border-gray-600 text-gray-400 text-xs uppercase tracking-widest">
-            <th class="p-3">Roll No</th>
-            <th class="p-3">Name</th>
-            <th class="p-3">Date</th>
-            <th class="p-3">Time</th>
-            <th class="p-3">Lecture</th>
-            <th class="p-3">Slot</th>
-            <th class="p-3">Subject</th>
-          </tr>
-        </thead>
-        <tbody id="attendanceTable">
-          <tr>
-            <td colspan="7" class="p-6 text-center text-gray-500">No attendance recorded yet</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <!-- Footer -->
+  <div class="fcrit-footer">
+    &copy; 2026 Fr. C. Rodrigues Institute of Technology, Vashi — Smart Attendance System
   </div>
-
-</div>
-
-<script src="/static/app.js"></script>
 
 <script>
+  const todayStr = new Date().toISOString().split("T")[0];
+  document.getElementById("datePicker").value = todayStr;
+
+  function setStatus(text, color) {
+    const el = document.getElementById("systemStatus");
+    el.textContent = text;
+    el.style.color = color==="yellow"?"#f5c842":color==="green"?"#4ade80":"#f87171";
+  }
+
   async function startLive() {
-    document.getElementById("systemStatus").textContent = "Running...";
-    document.getElementById("systemStatus").className = "text-yellow-400 text-xl font-semibold";
-    try {
-      await fetch("/recognize-live", { method: "POST" });
-      alert("Camera started for 60 seconds. Please face the camera.");
-    } catch (e) {
-      alert("Error starting camera: " + e);
-    }
-    setTimeout(() => {
-      document.getElementById("systemStatus").textContent = "Ready";
-      document.getElementById("systemStatus").className = "text-green-400 text-xl font-semibold";
-    }, 62000);
+    setStatus("Running...", "yellow");
+    try { await fetch("/recognize-live",{method:"POST"}); alert("Camera started for 60 seconds. Please face the camera."); }
+    catch(e) { alert("Error: "+e); }
+    setTimeout(()=>setStatus("Ready","green"), 62000);
+  }
+
+  async function uploadImage() {
+    const file = document.getElementById("imageFile").files[0];
+    if (!file) { alert("Please select a classroom image first."); return; }
+    setStatus("Processing image...", "yellow");
+    const form = new FormData(); form.append("file", file);
+    try { const res=await fetch("/upload-image",{method:"POST",body:form}); const d=await res.json(); alert(d.status); }
+    catch(e) { alert("Error: "+e); }
+    setStatus("Ready", "green");
   }
 
   async function uploadVideo() {
     const file = document.getElementById("videoFile").files[0];
     if (!file) { alert("Please select a video file first."); return; }
+    setStatus("Processing video...", "yellow");
+    const form = new FormData(); form.append("file", file);
+    try { const res=await fetch("/upload-video",{method:"POST",body:form}); const d=await res.json(); alert(d.status); }
+    catch(e) { alert("Error: "+e); }
+    setStatus("Ready", "green");
+  }
 
-    document.getElementById("systemStatus").textContent = "Processing...";
-    document.getElementById("systemStatus").className = "text-yellow-400 text-xl font-semibold";
-
-    const form = new FormData();
-    form.append("file", file);
-    try {
-      const res  = await fetch("/upload-video", { method: "POST", body: form });
-      const data = await res.json();
-      alert(data.status);
-    } catch (e) {
-      alert("Error uploading video: " + e);
-    }
+  function exportAttendance() {
+    const date = document.getElementById("datePicker").value || todayStr;
+    window.location.href = `/export?date=${date}`;
   }
 
   async function loadAttendance() {
+    const date = document.getElementById("datePicker").value || todayStr;
     try {
-      const res  = await fetch("/attendance");
+      const res  = await fetch(`/attendance?date=${date}`);
       const data = await res.json();
       const tbody = document.getElementById("attendanceTable");
-
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-500">No attendance recorded yet</td></tr>`;
-        document.getElementById("detectedCount").textContent = 0;
-        return;
+      if (!Array.isArray(data) || !data.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty">No attendance recorded for ${date}</td></tr>`;
+        document.getElementById("detectedCount").textContent = 0; return;
       }
-
-      // Count unique students present
-      const unique = new Set(data.map(r => r["Roll No"])).size;
+      const unique = new Set(data.map(r=>r["Roll No"])).size;
       document.getElementById("detectedCount").textContent = unique;
-
-      tbody.innerHTML = data.map(row => `
-        <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
-          <td class="p-3 text-cyan-300 font-mono">${row["Roll No"] ?? "--"}</td>
-          <td class="p-3 font-medium">${row["Name"] ?? "--"}</td>
-          <td class="p-3 text-gray-400">${row["Date"] ?? "--"}</td>
-          <td class="p-3 text-gray-400">${row["Time"] ?? "--"}</td>
-          <td class="p-3">
-            <span class="bg-gray-700 text-cyan-400 text-xs px-2 py-1 rounded font-mono">
-              ${row["Lecture"] ?? "--"}
-            </span>
-          </td>
-          <td class="p-3">
-            <span class="text-xs px-2 py-1 rounded font-bold
-              ${row["Slot"] === "A"
-                ? "bg-green-900 text-green-300"
-                : "bg-purple-900 text-purple-300"}">
-              ${row["Slot"] ?? "--"}
-            </span>
-          </td>
-          <td class="p-3 text-yellow-300 text-sm">${row["Subject"] ?? "--"}</td>
-        </tr>
-      `).join("");
-    } catch (e) {
-      console.error("Error loading attendance:", e);
-    }
+      tbody.innerHTML = data.map(row=>`
+        <tr>
+          <td class="roll">${row["Roll No"]??"--"}</td>
+          <td style="font-weight:500">${row["Name"]??"--"}</td>
+          <td class="muted">${row["Date"]??"--"}</td>
+          <td class="muted">${row["Time"]??"--"}</td>
+          <td><span class="badge badge-lec">${row["Lecture"]??"--"}</span></td>
+          <td><span class="badge ${row["Slot"]==="A"?"badge-slot-a":"badge-slot-b"}">${row["Slot"]??"--"}</span></td>
+          <td class="subj">${row["Subject"]??"--"}</td>
+        </tr>`).join("");
+    } catch(e) { console.error(e); }
   }
 
   async function loadStudents() {
-    try {
-      const res  = await fetch("/students");
-      const data = await res.json();
-      document.getElementById("studentsCount").textContent = data.total_students;
-    } catch (e) {
-      console.error("Error loading students:", e);
-    }
+    try { const res=await fetch("/students"); const d=await res.json(); document.getElementById("studentsCount").textContent=d.total_students; }
+    catch(e) { console.error(e); }
   }
 
   async function loadCurrentLecture() {
     try {
-      const res  = await fetch("/current-lecture");
-      const data = await res.json();
-      document.getElementById("lectureLabel").textContent = data.lecture ?? "--";
-      document.getElementById("subjectLabel").textContent = data.subject ?? "--";
-      document.getElementById("slotLabel").textContent    = `Slot ${data.slot ?? "--"}`;
-    } catch (e) {
-      console.error("Error loading lecture info:", e);
-    }
+      const res=await fetch("/current-lecture"); const d=await res.json();
+      document.getElementById("lectureLabel").textContent = d.lecture??"--";
+      document.getElementById("subjectLabel").textContent = d.subject??"--";
+      document.getElementById("slotLabel").textContent    = `Slot ${d.slot??"--"}`;
+    } catch(e) { console.error(e); }
   }
 
-  // Poll every 3 seconds
+  document.getElementById("datePicker").addEventListener("change", loadAttendance);
   setInterval(loadAttendance,     3000);
   setInterval(loadCurrentLecture, 30000);
-
-  // Initial load
-  loadAttendance();
-  loadStudents();
-  loadCurrentLecture();
+  loadAttendance(); loadStudents(); loadCurrentLecture();
 </script>
-
 </body>
 </html>
