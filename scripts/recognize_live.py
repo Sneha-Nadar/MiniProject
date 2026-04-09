@@ -8,84 +8,67 @@ from app.ai.face_encoder import encode_faces
 from app.ai.face_matcher import find_best_match
 from app.attendance.attendance_services import mark_attendance
 
-
-# Load encodings
 with open("data/encodings/encodings.pkl", "rb") as f:
     known_encodings, known_names = pickle.load(f)
 
+def run_recognition_session():
+    """Run a 60-second face recognition session."""
+    cap = cv2.VideoCapture(0)
+    print("🎥 Camera started (60 seconds)...")
 
-cap = cv2.VideoCapture(0)
+    start_time = time.time()
+    FRAME_HISTORY = 10
 
-print("🎥 Camera started. Running for 60 seconds...")
+    # FIX: per-face history dict keyed by position bucket
+    face_histories = {}  # key: x-bucket → list of names
 
-start_time = time.time()
+    while True:
+        if time.time() - start_time > 60:
+            print("⏹ Session finished.")
+            break
 
-recent_names = []
-FRAME_HISTORY = 10
+        ret, frame = cap.read()
+        if not ret:
+            break
 
+        frame = cv2.resize(frame, (960, 720))
+        faces = detect_faces(frame)
+        encodings = encode_faces(frame, faces)
 
-while True:
+        for (top, right, bottom, left), face_encoding in zip(faces, encodings):
+            name, distance = find_best_match(known_encodings, known_names, face_encoding)
 
-    # ⏱ Stop after 10 seconds
-    if time.time() - start_time > 60:
-        print("⏹ Camera session finished.")
-        break
+            if distance > 0.50:
+                name = "Unknown"
 
-    ret, frame = cap.read()
+            # Use horizontal center bucket as face identity key
+            x_center = (left + right) // 2
+            bucket   = x_center // 100  # 100px wide buckets
 
-    if not ret:
-        break
+            if bucket not in face_histories:
+                face_histories[bucket] = []
 
-    # Resize frame for stability
-    frame = cv2.resize(frame, (960, 720))
+            face_histories[bucket].append(name)
 
-    faces = detect_faces(frame)
-    encodings = encode_faces(frame, faces)
+            if len(face_histories[bucket]) > FRAME_HISTORY:
+                face_histories[bucket].pop(0)
 
-    for (top, right, bottom, left), face_encoding in zip(faces, encodings):
+            stable_name = Counter(face_histories[bucket]).most_common(1)[0][0]
 
-        name, distance = find_best_match(
-            known_encodings,
-            known_names,
-            face_encoding
-        )
+            if stable_name != "Unknown":
+                mark_attendance(stable_name)
 
-        # Reject weak matches
-        if distance > 0.50:
-            name = "Unknown"
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            label = f"{stable_name} ({round(distance, 2)})"
+            cv2.putText(frame, label, (left, top - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-        # Stabilize prediction
-        recent_names.append(name)
+        cv2.imshow("Live Attendance", frame)
+        if cv2.waitKey(1) == 27:
+            break
 
-        if len(recent_names) > FRAME_HISTORY:
-            recent_names.pop(0)
+    cap.release()
+    cv2.destroyAllWindows()
 
-        stable_name = Counter(recent_names).most_common(1)[0][0]
-
-        # Mark attendance
-        if stable_name != "Unknown":
-            mark_attendance(stable_name)
-
-        # Draw bounding box
-        cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
-
-        label = f"{stable_name} ({round(distance,2)})"
-
-        cv2.putText(
-            frame,
-            label,
-            (left, top - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0,255,0),
-            2
-        )
-
-    cv2.imshow("Live Face Recognition", frame)
-
-    if cv2.waitKey(1) == 27:
-        break
-
-
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    run_recognition_session()

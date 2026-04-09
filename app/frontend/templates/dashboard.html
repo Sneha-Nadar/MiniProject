@@ -1,186 +1,229 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-
-<title>Smart AI Attendance</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<link rel="stylesheet" href="/static/style.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart AI Attendance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-black text-white">
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
 
-<div class="max-w-6xl mx-auto p-10">
+<div class="max-w-7xl mx-auto p-8">
 
-<h1 class="text-5xl font-bold text-center mb-10 text-cyan-400">
-Smart AI Attendance System
-</h1>
+  <!-- Header -->
+  <h1 class="text-4xl font-bold text-center mb-2 text-cyan-400">
+    Smart AI Attendance System
+  </h1>
+  <p class="text-center text-gray-400 mb-8 text-sm">
+    Fr. C. Rodrigues Institute of Technology — Dept. of Information Technology
+  </p>
 
+  <!-- Current Lecture Banner -->
+  <div id="lectureBanner"
+       class="bg-gray-800 border border-cyan-700 rounded-xl p-4 mb-8 flex items-center justify-between">
+    <div>
+      <p class="text-gray-400 text-xs uppercase tracking-widest">Current Lecture</p>
+      <p id="lectureLabel" class="text-2xl font-bold text-cyan-400">--</p>
+      <p id="subjectLabel" class="text-gray-300 text-sm mt-1">--</p>
+    </div>
+    <div class="text-right">
+      <p class="text-gray-400 text-xs uppercase tracking-widest">Slot</p>
+      <p id="slotLabel" class="text-2xl font-bold text-green-400">--</p>
+      <p class="text-gray-500 text-xs mt-1">A = first 30 min &nbsp;|&nbsp; B = last 30 min</p>
+    </div>
+  </div>
 
-<div class="grid grid-cols-3 gap-6 mb-10">
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-3 gap-6 mb-8">
+    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl text-center">
+      <h2 class="text-gray-400 text-sm mb-1">Total Students</h2>
+      <p id="studentsCount" class="text-3xl font-bold text-cyan-400">--</p>
+    </div>
+    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl text-center">
+      <h2 class="text-gray-400 text-sm mb-1">Present Today</h2>
+      <p id="detectedCount" class="text-3xl font-bold text-green-400">--</p>
+    </div>
+    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl text-center">
+      <h2 class="text-gray-400 text-sm mb-1">System Status</h2>
+      <p id="systemStatus" class="text-green-400 text-xl font-semibold">Ready</p>
+    </div>
+  </div>
 
-<div class="bg-gray-800 p-6 rounded-xl shadow-xl text-center">
+  <!-- Action Panels -->
+  <div class="grid grid-cols-2 gap-6 mb-8">
 
-<h2 class="text-gray-400 text-sm">Total Students</h2>
-<p id="studentsCount" class="text-3xl font-bold text-cyan-400">--</p>
+    <!-- Live Recognition -->
+    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl">
+      <h2 class="text-xl mb-4 text-cyan-400 font-semibold">Live Recognition</h2>
+      <button onclick="startLive()"
+              class="bg-cyan-500 hover:bg-cyan-400 active:scale-95 px-6 py-3 rounded-lg
+                     text-black font-bold w-full transition">
+        Start Camera (60 sec)
+      </button>
+      <p class="text-gray-400 text-xs mt-3">
+        Opens webcam for 60 seconds and marks attendance for current lecture slot.
+      </p>
+    </div>
+
+    <!-- CCTV Upload -->
+    <div class="card bg-gray-800 p-6 rounded-xl shadow-xl">
+      <h2 class="text-xl mb-4 text-purple-400 font-semibold">Process CCTV Video</h2>
+      <input type="file" id="videoFile" accept="video/*"
+             class="bg-gray-700 text-sm p-2 rounded-lg w-full mb-3 cursor-pointer">
+      <button onclick="uploadVideo()"
+              class="bg-purple-500 hover:bg-purple-400 active:scale-95 px-6 py-3 rounded-lg
+                     text-black font-bold w-full transition">
+        Upload &amp; Process Video
+      </button>
+      <p class="text-gray-400 text-xs mt-3">
+        Upload a recorded CCTV video — faces will be recognized and attendance marked.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl text-green-400 font-semibold">Today's Attendance Log</h2>
+      <span class="text-gray-500 text-xs">Auto-refreshes every 3 seconds</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-gray-600 text-gray-400 text-xs uppercase tracking-widest">
+            <th class="p-3">Roll No</th>
+            <th class="p-3">Name</th>
+            <th class="p-3">Date</th>
+            <th class="p-3">Time</th>
+            <th class="p-3">Lecture</th>
+            <th class="p-3">Slot</th>
+            <th class="p-3">Subject</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceTable">
+          <tr>
+            <td colspan="7" class="p-6 text-center text-gray-500">No attendance recorded yet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
 </div>
 
-<div class="bg-gray-800 p-6 rounded-xl shadow-xl text-center">
-
-<h2 class="text-gray-400 text-sm">Students Detected</h2>
-<p id="detectedCount" class="text-3xl font-bold text-green-400">--</p>
-
-</div>
-
-<div class="bg-gray-800 p-6 rounded-xl shadow-xl text-center">
-
-<h2 class="text-gray-400 text-sm">System Status</h2>
-<p class="text-green-400 text-xl">Ready</p>
-
-</div>
-
-</div>
-
-
-<div class="grid grid-cols-2 gap-10">
-
-<div class="bg-gray-800 p-8 rounded-xl shadow-xl">
-
-<h2 class="text-2xl mb-6 text-cyan-400">Live Recognition</h2>
-
-<button onclick="startLive()"
-class="bg-cyan-500 hover:bg-cyan-400 px-6 py-3 rounded-lg text-black font-bold w-full transition">
-
-Start Camera Recognition
-
-</button>
-
-<p class="text-gray-400 text-sm mt-3">
-Camera runs for 60 seconds and logs attendance automatically
-</p>
-
-</div>
-
-
-<div class="bg-gray-800 p-8 rounded-xl shadow-xl">
-
-<h2 class="text-2xl mb-6 text-purple-400">Process CCTV Video</h2>
-
-<input type="file" id="videoFile"
-class="bg-gray-700 p-3 rounded-lg w-full mb-4">
-
-<button onclick="uploadVideo()"
-class="bg-purple-500 hover:bg-purple-400 px-6 py-3 rounded-lg text-black font-bold w-full">
-
-Upload & Process Video
-
-</button>
-
-</div>
-
-</div>
-
-
-<div class="mt-12 bg-gray-800 p-8 rounded-xl shadow-xl">
-
-<h2 class="text-2xl mb-6 text-green-400">Attendance Log</h2>
-
-<table class="w-full text-left">
-
-<thead>
-
-<tr class="border-b border-gray-600">
-
-<th class="p-3">Name</th>
-<th class="p-3">Date</th>
-<th class="p-3">Time</th>
-
-</tr>
-
-</thead>
-
-<tbody id="attendanceTable">
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-
+<script src="/static/app.js"></script>
 
 <script>
+  async function startLive() {
+    document.getElementById("systemStatus").textContent = "Running...";
+    document.getElementById("systemStatus").className = "text-yellow-400 text-xl font-semibold";
+    try {
+      await fetch("/recognize-live", { method: "POST" });
+      alert("Camera started for 60 seconds. Please face the camera.");
+    } catch (e) {
+      alert("Error starting camera: " + e);
+    }
+    setTimeout(() => {
+      document.getElementById("systemStatus").textContent = "Ready";
+      document.getElementById("systemStatus").className = "text-green-400 text-xl font-semibold";
+    }, 62000);
+  }
 
-async function startLive(){
+  async function uploadVideo() {
+    const file = document.getElementById("videoFile").files[0];
+    if (!file) { alert("Please select a video file first."); return; }
 
-await fetch("/recognize-live",{method:"POST"})
+    document.getElementById("systemStatus").textContent = "Processing...";
+    document.getElementById("systemStatus").className = "text-yellow-400 text-xl font-semibold";
 
-alert("Camera started. Please face the camera.")
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res  = await fetch("/upload-video", { method: "POST", body: form });
+      const data = await res.json();
+      alert(data.status);
+    } catch (e) {
+      alert("Error uploading video: " + e);
+    }
+  }
 
-}
+  async function loadAttendance() {
+    try {
+      const res  = await fetch("/attendance");
+      const data = await res.json();
+      const tbody = document.getElementById("attendanceTable");
 
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-500">No attendance recorded yet</td></tr>`;
+        document.getElementById("detectedCount").textContent = 0;
+        return;
+      }
 
-async function uploadVideo(){
+      // Count unique students present
+      const unique = new Set(data.map(r => r["Roll No"])).size;
+      document.getElementById("detectedCount").textContent = unique;
 
-let file = document.getElementById("videoFile").files[0]
+      tbody.innerHTML = data.map(row => `
+        <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
+          <td class="p-3 text-cyan-300 font-mono">${row["Roll No"] ?? "--"}</td>
+          <td class="p-3 font-medium">${row["Name"] ?? "--"}</td>
+          <td class="p-3 text-gray-400">${row["Date"] ?? "--"}</td>
+          <td class="p-3 text-gray-400">${row["Time"] ?? "--"}</td>
+          <td class="p-3">
+            <span class="bg-gray-700 text-cyan-400 text-xs px-2 py-1 rounded font-mono">
+              ${row["Lecture"] ?? "--"}
+            </span>
+          </td>
+          <td class="p-3">
+            <span class="text-xs px-2 py-1 rounded font-bold
+              ${row["Slot"] === "A"
+                ? "bg-green-900 text-green-300"
+                : "bg-purple-900 text-purple-300"}">
+              ${row["Slot"] ?? "--"}
+            </span>
+          </td>
+          <td class="p-3 text-yellow-300 text-sm">${row["Subject"] ?? "--"}</td>
+        </tr>
+      `).join("");
+    } catch (e) {
+      console.error("Error loading attendance:", e);
+    }
+  }
 
-let form = new FormData()
+  async function loadStudents() {
+    try {
+      const res  = await fetch("/students");
+      const data = await res.json();
+      document.getElementById("studentsCount").textContent = data.total_students;
+    } catch (e) {
+      console.error("Error loading students:", e);
+    }
+  }
 
-form.append("file",file)
+  async function loadCurrentLecture() {
+    try {
+      const res  = await fetch("/current-lecture");
+      const data = await res.json();
+      document.getElementById("lectureLabel").textContent = data.lecture ?? "--";
+      document.getElementById("subjectLabel").textContent = data.subject ?? "--";
+      document.getElementById("slotLabel").textContent    = `Slot ${data.slot ?? "--"}`;
+    } catch (e) {
+      console.error("Error loading lecture info:", e);
+    }
+  }
 
-await fetch("/upload-video",{method:"POST",body:form})
+  // Poll every 3 seconds
+  setInterval(loadAttendance,     3000);
+  setInterval(loadCurrentLecture, 30000);
 
-alert("Video uploaded. Processing started.")
-
-}
-
-
-async function loadAttendance(){
-
-const res = await fetch("/attendance")
-
-const data = await res.json()
-
-let table = document.getElementById("attendanceTable")
-
-table.innerHTML=""
-
-data.forEach(row => {
-
-table.innerHTML += `
-<tr class="border-b border-gray-700">
-<td class="p-3">${row.Name}</td>
-<td class="p-3">${row.Date}</td>
-<td class="p-3">${row.Time}</td>
-</tr>
-`
-
-})
-
-document.getElementById("detectedCount").innerText = data.length
-
-}
-
-
-async function loadStudents(){
-
-const res = await fetch("/students")
-
-const data = await res.json()
-
-document.getElementById("studentsCount").innerText = data.total_students
-
-}
-
-
-setInterval(loadAttendance,2000)
-
-loadStudents()
-
+  // Initial load
+  loadAttendance();
+  loadStudents();
+  loadCurrentLecture();
 </script>
 
 </body>
 </html>
-<script src="/static/app.js"></script>
