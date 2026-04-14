@@ -25,13 +25,13 @@ if image is None:
     print("❌ Could not read image.")
     sys.exit(1)
 
-# 🔥 FIX 1: UPSCALE IMAGE (helps detect small faces)
-image = cv2.resize(image, None, fx=1.5, fy=1.5)
+# 🔥 STEP 1: UPSCALE (important for group photos)
+image = cv2.resize(image, None, fx=1.8, fy=1.8)
 
-# 🔥 FIX 2: Convert to RGB (VERY IMPORTANT)
+# 🔥 STEP 2: Convert to RGB
 rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-# 🔥 FIX 3: Detect faces using RGB image
+# 🔥 STEP 3: Detect + Encode
 faces = detect_faces(rgb_image)
 encodings = encode_faces(rgb_image, faces)
 
@@ -42,7 +42,7 @@ marked = []
 for (top, right, bottom, left), face_encoding in zip(faces, encodings):
     name, distance = find_best_match(known_encodings, known_names, face_encoding)
 
-    # 🔥 Slightly relaxed threshold for real-world conditions
+    # 🔥 Real-world tolerant threshold
     if distance > 0.55:
         name = "Unknown"
 
@@ -52,11 +52,11 @@ for (top, right, bottom, left), face_encoding in zip(faces, encodings):
 
     # Draw bounding boxes
     color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
-    cv2.rectangle(image, (left, top), (right, bottom), color, 2)
 
+    cv2.rectangle(image, (left, top), (right, bottom), color, 2)
     cv2.putText(
         image,
-        f"{name} ({round(distance,2)})",
+        f"{name} ({round(distance, 2)})",
         (left, top - 10),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
