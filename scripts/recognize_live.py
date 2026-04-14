@@ -1,22 +1,20 @@
 import cv2
 import pickle
-from collections import Counter
 import time
 
-from app.ai.face_detector import detect_faces
-from app.ai.face_encoder import encode_faces
 from app.ai.face_matcher import find_best_match
 from app.attendance.attendance_services import mark_attendance
 
-# 🔥 Load encodings
+# 🔥 USE face_recognition DIRECTLY (faster + stable)
+import face_recognition
+
+# Load encodings
 with open("data/encodings/encodings.pkl", "rb") as f:
     known_encodings, known_names = pickle.load(f)
 
 
 def run_recognition_session():
-    """Stable + Fast Live Recognition (NO FREEZE VERSION)"""
 
-    # 🔥 Try both cameras
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if not cap.isOpened():
         cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
@@ -28,8 +26,6 @@ def run_recognition_session():
     print("🎥 Camera started (60 seconds)...")
 
     start_time = time.time()
-    frame_count = 0
-    FRAME_SKIP = 5   # 🔥 higher = faster
 
     while True:
         if time.time() - start_time > 60:
@@ -39,70 +35,55 @@ def run_recognition_session():
         ret, frame = cap.read()
         if not ret:
             print("❌ Frame not received")
-            break
+            continue   # 🔥 don't break
 
-        # 🔥 SMALL resolution = BIG performance boost
-        frame = cv2.resize(frame, (320, 240))
+        # 🔥 SMALL SIZE = FAST
+        small = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
 
-        frame_count += 1
+        rgb_small = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
 
-        # 🔥 Skip frames (reduces CPU load)
-        if frame_count % FRAME_SKIP != 0:
-            cv2.imshow("Live Attendance", frame)
-            if cv2.waitKey(1) == 27:
-                break
-            continue
+        # 🔥 FAST DETECTION (HOG)
+        face_locations = face_recognition.face_locations(rgb_small, model="hog")
 
-        # 🔥 Convert to RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # 🔥 ENCODINGS
+        face_encodings = face_recognition.face_encodings(rgb_small, face_locations)
 
-        # 🔥 Detect faces
-        faces = detect_faces(rgb_frame)
-
-        # 🔥 Limit faces (avoid overload)
-        faces = faces[:3]
-
-        # 🔥 Encode
-        encodings = encode_faces(rgb_frame, faces)
-
-        for (top, right, bottom, left), face_encoding in zip(faces, encodings):
+        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
 
             name, distance = find_best_match(
                 known_encodings, known_names, face_encoding
             )
 
-            # 🔥 Relax threshold for demo
             if distance > 0.65:
                 name = "Unknown"
 
-            # 🔥 Mark attendance
-            if name != "Unknown":
-                mark_attendance(name)
+            # 🔥 Scale back
+            top *= 2
+            right *= 2
+            bottom *= 2
+            left *= 2
 
             color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
 
-            # 🔥 Draw box
+            if name != "Unknown":
+                mark_attendance(name)
+
             cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
 
             cv2.putText(
                 frame,
-                name,
+                f"{name}",
                 (left, top - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
+                0.7,
                 color,
-                1,
+                2,
             )
 
-        # 🔥 Show frame
         cv2.imshow("Live Attendance", frame)
 
-        # 🔥 THIS prevents "Not Responding"
         if cv2.waitKey(1) == 27:
             break
-
-        # 🔥 Small delay keeps UI smooth
-        time.sleep(0.02)
 
     cap.release()
     cv2.destroyAllWindows()
