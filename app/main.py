@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Stre
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from scripts.process_image import process_image_function
 
 import sys, shutil, os, io
 from datetime import datetime
@@ -147,21 +148,28 @@ async def upload_video(request: Request, background_tasks: BackgroundTasks, file
     return JSONResponse({"status": f"Video '{file.filename}' uploaded. Processing started."})
 
 # ── Upload classroom image ─────────────────────────────────────────────────────
-def _process_image(image_path: str):
-    import subprocess
-    subprocess.Popen([sys.executable, "-m", "scripts.process_image", image_path], cwd=BASE_DIR)
 
 @app.post("/upload-image")
-async def upload_image(request: Request, background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def upload_image(request: Request, file: UploadFile = File(...)):
+
     if not is_logged_in(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
-        return JSONResponse({"status": "❌ Invalid file type. Upload JPG, PNG or BMP."}, status_code=400)
+        return JSONResponse({"status": "❌ Invalid file type"}, status_code=400)
+
     image_dir = os.path.join(BASE_DIR, "data", "images")
     os.makedirs(image_dir, exist_ok=True)
+
     image_path = os.path.join(image_dir, file.filename)
+
     with open(image_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    background_tasks.add_task(_process_image, image_path)
-    return JSONResponse({"status": f"✅ Image '{file.filename}' uploaded. Detecting faces and marking attendance..."})
+
+    print(f"🖼️ Processing image: {image_path}")
+
+    # 🔥 CRITICAL FIX → RUN DIRECTLY
+    process_image_function(image_path)
+
+    return JSONResponse({"status": f"✅ Processed '{file.filename}'"})
