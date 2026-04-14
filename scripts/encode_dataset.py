@@ -1,4 +1,9 @@
+import sys
 import os
+
+# ✅ FIX: make app/ visible
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import pickle
 import cv2
 
@@ -31,15 +36,15 @@ for person_name in os.listdir(DATASET_DIR):
         if image is None:
             continue
 
-        # 🔥 FIX 1: Resize (standardize input)
+        # 🔥 Resize
         image = cv2.resize(image, (640, 480))
 
-        # 🔥 FIX 2: Convert to RGB (VERY IMPORTANT)
+        # 🔥 Convert to RGB
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         faces = detect_faces(rgb_image)
 
-        # 🔥 FIX 3: Skip bad images
+        # 🔥 Skip bad images
         if len(faces) != 1:
             print(f"⚠️ Skipping {image_name} (faces detected: {len(faces)})")
             continue
