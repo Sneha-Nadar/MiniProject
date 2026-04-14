@@ -31,17 +31,30 @@ for person_name in os.listdir(DATASET_DIR):
         if image is None:
             continue
 
-        faces = detect_faces(image)
+        # 🔥 FIX 1: Resize (standardize input)
+        image = cv2.resize(image, (640, 480))
 
-        encodings = encode_faces(image, faces)
+        # 🔥 FIX 2: Convert to RGB (VERY IMPORTANT)
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        for encoding in encodings:
-            known_encodings.append(encoding)
-            known_names.append(person_name)
+        faces = detect_faces(rgb_image)
+
+        # 🔥 FIX 3: Skip bad images
+        if len(faces) != 1:
+            print(f"⚠️ Skipping {image_name} (faces detected: {len(faces)})")
+            continue
+
+        encodings = encode_faces(rgb_image, faces)
+
+        if len(encodings) == 0:
+            continue
+
+        known_encodings.append(encodings[0])
+        known_names.append(person_name)
 
 print("💾 Saving encodings...")
 
 with open(ENCODINGS_FILE, "wb") as f:
     pickle.dump((known_encodings, known_names), f)
 
-print("✅ Encoding complete.")
+print(f"✅ Encoding complete. Total encodings: {len(known_encodings)}")
