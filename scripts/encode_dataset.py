@@ -1,14 +1,11 @@
 import sys
 import os
 
-# ✅ FIX: make app/ visible
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pickle
 import cv2
-
-from app.ai.face_detector import detect_faces
-from app.ai.face_encoder import encode_faces
+import face_recognition   # 🔥 direct use (faster)
 
 DATASET_DIR = "data/datasets"
 ENCODINGS_FILE = "data/encodings/encodings.pkl"
@@ -27,7 +24,13 @@ for person_name in os.listdir(DATASET_DIR):
 
     print(f"Encoding {person_name}...")
 
+    max_images_per_person = 10
+    count = 0
+
     for image_name in os.listdir(person_path):
+
+        if count >= max_images_per_person:
+            break
 
         image_path = os.path.join(person_path, image_name)
 
@@ -36,26 +39,28 @@ for person_name in os.listdir(DATASET_DIR):
         if image is None:
             continue
 
-        # 🔥 Resize
-        image = cv2.resize(image, (640, 480))
+        # 🔥 Resize smaller (faster)
+        image = cv2.resize(image, (320, 240))
 
         # 🔥 Convert to RGB
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        faces = detect_faces(rgb_image)
+        # 🔥 FAST detection (HOG)
+        faces = face_recognition.face_locations(rgb_image, model="hog")
 
-        # 🔥 Skip bad images
         if len(faces) != 1:
             print(f"⚠️ Skipping {image_name} (faces detected: {len(faces)})")
             continue
 
-        encodings = encode_faces(rgb_image, faces)
+        encodings = face_recognition.face_encodings(rgb_image, faces)
 
         if len(encodings) == 0:
             continue
 
         known_encodings.append(encodings[0])
         known_names.append(person_name)
+
+        count += 1
 
 print("💾 Saving encodings...")
 
