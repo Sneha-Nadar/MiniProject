@@ -150,7 +150,11 @@ async def upload_video(request: Request, background_tasks: BackgroundTasks, file
 # ── Upload classroom image ─────────────────────────────────────────────────────
 
 @app.post("/upload-image")
-async def upload_image(request: Request, file: UploadFile = File(...)):
+async def upload_image(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
 
     if not is_logged_in(request):
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -167,9 +171,9 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
     with open(image_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    print(f"🖼️ Processing image: {image_path}")
+    print(f"🖼️ Queued image: {image_path}")
 
-    # 🔥 CRITICAL FIX → RUN DIRECTLY
-    process_image_function(image_path)
+    # 🔥 RUN IN BACKGROUND (FIX)
+    background_tasks.add_task(process_image_function, image_path)
 
-    return JSONResponse({"status": f"✅ Processed '{file.filename}'"})
+    return JSONResponse({"status": f"⏳ Processing started for '{file.filename}'"})

@@ -237,13 +237,37 @@
 
   async function uploadImage() {
     const file = document.getElementById("imageFile").files[0];
-    if (!file) { alert("Please select a classroom image first."); return; }
+
+    if (!file) {
+        alert("Please select a classroom image first.");
+        return;
+    }
+
     setStatus("Processing image...", "yellow");
-    const form = new FormData(); form.append("file", file);
-    try { const res=await fetch("/upload-image",{method:"POST",body:form}); const d=await res.json(); alert(d.status); }
-    catch(e) { alert("Error: "+e); }
-    setStatus("Ready", "green");
-  }
+
+    const form = new FormData();
+    form.append("file", file);
+
+    try {
+        const res = await fetch("/upload-image", {
+            method: "POST",
+            body: form
+        });
+
+        const d = await res.json();
+
+        alert(d.status);
+
+        // 🔥 wait for backend processing to complete
+        setTimeout(() => {
+            setStatus("Ready", "green");
+        }, 2500);
+
+    } catch (e) {
+        alert("Error: " + e);
+        setStatus("Error", "red");
+    }
+}
 
   async function uploadVideo() {
     const file = document.getElementById("videoFile").files[0];

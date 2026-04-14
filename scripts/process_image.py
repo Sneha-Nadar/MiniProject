@@ -27,7 +27,7 @@ def process_image_function(IMAGE_PATH):
         return
 
     # Upscale for better group detection
-    image = cv2.resize(image, None, fx=1.8, fy=1.8)
+    image = cv2.resize(image, None, fx=1.2, fy=1.2)
 
     # Convert to RGB
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
