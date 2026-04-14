@@ -14,44 +14,62 @@ if not IMAGE_PATH or not os.path.exists(IMAGE_PATH):
     print(f"❌ Image not found: {IMAGE_PATH}")
     sys.exit(1)
 
+# Load encodings
 with open("data/encodings/encodings.pkl", "rb") as f:
     known_encodings, known_names = pickle.load(f)
 
-print(f"🖼️  Processing image: {IMAGE_PATH}")
+print(f"🖼️ Processing image: {IMAGE_PATH}")
 image = cv2.imread(IMAGE_PATH)
 
 if image is None:
     print("❌ Could not read image.")
     sys.exit(1)
 
-# Resize if too large
-h, w = image.shape[:2]
-if w > 1280:
-    scale = 1280 / w
-    image = cv2.resize(image, (int(w * scale), int(h * scale)))
+# 🔥 FIX 1: UPSCALE IMAGE (helps detect small faces)
+image = cv2.resize(image, None, fx=1.5, fy=1.5)
 
-faces     = detect_faces(image)
-encodings = encode_faces(image, faces)
+# 🔥 FIX 2: Convert to RGB (VERY IMPORTANT)
+rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+# 🔥 FIX 3: Detect faces using RGB image
+faces = detect_faces(rgb_image)
+encodings = encode_faces(rgb_image, faces)
+
 print(f"👥 Detected {len(faces)} face(s)")
 
 marked = []
 
 for (top, right, bottom, left), face_encoding in zip(faces, encodings):
     name, distance = find_best_match(known_encodings, known_names, face_encoding)
-    if distance > 0.50:
+
+    # 🔥 Slightly relaxed threshold for real-world conditions
+    if distance > 0.55:
         name = "Unknown"
+
     if name != "Unknown":
         mark_attendance(name)
         marked.append(name)
+
+    # Draw bounding boxes
     color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
     cv2.rectangle(image, (left, top), (right, bottom), color, 2)
-    cv2.putText(image, f"{name} ({round(distance,2)})", (left, top-10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+    cv2.putText(
+        image,
+        f"{name} ({round(distance,2)})",
+        (left, top - 10),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        color,
+        2
+    )
 
 # Save annotated image
-output_dir  = os.path.join(os.path.dirname(IMAGE_PATH), "annotated")
+output_dir = os.path.join(os.path.dirname(IMAGE_PATH), "annotated")
 os.makedirs(output_dir, exist_ok=True)
 output_path = os.path.join(output_dir, os.path.basename(IMAGE_PATH))
+
 cv2.imwrite(output_path, image)
+
 print(f"✅ Marked: {marked}")
 print(f"💾 Saved annotated image: {output_path}")
