@@ -236,39 +236,14 @@
   }
 
   async function uploadImage() {
-  const file = document.getElementById("imageFile").files[0];
-  if (!file) {
-    alert("Please select a classroom image first.");
-    return;
+    const file = document.getElementById("imageFile").files[0];
+    if (!file) { alert("Please select a classroom image first."); return; }
+    setStatus("Processing image...", "yellow");
+    const form = new FormData(); form.append("file", file);
+    try { const res=await fetch("/upload-image",{method:"POST",body:form}); const d=await res.json(); alert(d.status); }
+    catch(e) { alert("Error: "+e); }
+    setStatus("Ready", "green");
   }
-
-  const btn = document.getElementById("uploadBtn");
-  btn.disabled = true;
-
-  setStatus("Processing image...", "yellow");
-
-  const form = new FormData();
-  form.append("file", file);
-
-  try {
-    await fetch("/upload-image", {
-      method: "POST",
-      body: form
-    });
-
-    // 🔥 WAIT THEN REFRESH ONCE
-    setTimeout(async () => {
-      await loadAttendance();
-      setStatus("Updated ✅", "green");
-      btn.disabled = false;
-    }, 2000);
-
-  } catch (e) {
-    alert("Error: " + e);
-    setStatus("Error", "red");
-    btn.disabled = false;
-  }
-}
 
   async function uploadVideo() {
     const file = document.getElementById("videoFile").files[0];
@@ -325,6 +300,7 @@
   }
 
   document.getElementById("datePicker").addEventListener("change", loadAttendance);
+  setInterval(loadAttendance,     3000);
   setInterval(loadCurrentLecture, 30000);
   loadAttendance(); loadStudents(); loadCurrentLecture();
 </script>
