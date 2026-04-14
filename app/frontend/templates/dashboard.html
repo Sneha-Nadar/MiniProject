@@ -242,6 +242,9 @@
     return;
   }
 
+  const btn = document.getElementById("uploadBtn");
+  btn.disabled = true;
+
   setStatus("Processing image...", "yellow");
 
   const form = new FormData();
@@ -253,15 +256,17 @@
       body: form
     });
 
-    // 🔥 KEY FIX: WAIT + FORCE REFRESH
+    // 🔥 WAIT THEN REFRESH ONCE
     setTimeout(async () => {
-      await loadAttendance();   // refresh table
+      await loadAttendance();
       setStatus("Updated ✅", "green");
+      btn.disabled = false;
     }, 2000);
 
   } catch (e) {
     alert("Error: " + e);
     setStatus("Error", "red");
+    btn.disabled = false;
   }
 }
 
@@ -320,7 +325,6 @@
   }
 
   document.getElementById("datePicker").addEventListener("change", loadAttendance);
-  setInterval(loadAttendance,     3000);
   setInterval(loadCurrentLecture, 30000);
   loadAttendance(); loadStudents(); loadCurrentLecture();
 </script>
