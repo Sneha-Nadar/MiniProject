@@ -16,24 +16,22 @@ def run_recognition_session():
 
     print("Opening camera...")
 
-    # 🔥 Try multiple camera indices
+    # 🔥 FIX 1: Try multiple camera indices
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if not cap.isOpened():
-        print("Trying camera index 1...")
         cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
     if not cap.isOpened():
-        print("❌ Camera not opening at all")
+        print("❌ Camera not opening")
         return
 
-    print("✅ Camera started")
+    print("🎥 Camera started (60 seconds)...")
 
     start_time = time.time()
     FRAME_HISTORY = 10
-    face_histories = {}
 
-    # 🔥 Prevent DB spam
-    marked_once = set()
+    face_histories = {}
+    marked_once = set()   # 🔥 FIX 2: avoid DB spam
 
     while True:
         if time.time() - start_time > 60:
@@ -45,12 +43,13 @@ def run_recognition_session():
             print("❌ Frame not received")
             break
 
-        # 🔥 Reduce load (important)
+        # 🔥 FIX 3: smaller frame (performance)
         frame = cv2.resize(frame, (640, 480))
 
-        # 🔥 Fix brightness
+        # 🔥 FIX 4: fix brightness
         frame = cv2.convertScaleAbs(frame, alpha=0.8, beta=-30)
 
+        # 🔥 FIX 5: RGB conversion (VERY IMPORTANT)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         faces = detect_faces(rgb_frame)
@@ -60,7 +59,7 @@ def run_recognition_session():
 
             name, distance = find_best_match(known_encodings, known_names, face_encoding)
 
-            # 🔥 Better threshold
+            # 🔥 FIX 6: better threshold
             if distance > 0.65:
                 name = "Unknown"
 
@@ -78,7 +77,7 @@ def run_recognition_session():
 
             stable_name = Counter(face_histories[bucket]).most_common(1)[0][0]
 
-            # 🔥 Prevent multiple DB writes
+            # 🔥 FIX 7: avoid multiple attendance calls
             if stable_name != "Unknown" and stable_name not in marked_once:
                 mark_attendance(stable_name)
                 marked_once.add(stable_name)
@@ -97,7 +96,7 @@ def run_recognition_session():
         if cv2.waitKey(1) & 0xFF == 27:
             break
 
-        # 🔥 Prevent freezing
+        # 🔥 FIX 8: prevent freeze
         time.sleep(0.01)
 
     cap.release()
