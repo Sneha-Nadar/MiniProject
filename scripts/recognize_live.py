@@ -14,9 +14,9 @@ with open("data/encodings/encodings.pkl", "rb") as f:
 
 
 def run_recognition_session():
-    """Run a 60-second face recognition session (FAST + STABLE)"""
+    """Stable + Fast Live Recognition (NO FREEZE VERSION)"""
 
-    # 🔥 Try both cameras (internal + external)
+    # 🔥 Try both cameras
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if not cap.isOpened():
         cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
@@ -28,11 +28,10 @@ def run_recognition_session():
     print("🎥 Camera started (60 seconds)...")
 
     start_time = time.time()
-    FRAME_SKIP = 3
     frame_count = 0
+    FRAME_SKIP = 5   # 🔥 higher = faster
 
     while True:
-        # ⏱ Stop after 60 sec
         if time.time() - start_time > 60:
             print("⏹ Session finished.")
             break
@@ -42,12 +41,12 @@ def run_recognition_session():
             print("❌ Frame not received")
             break
 
-        # 🔥 Resize for speed
-        frame = cv2.resize(frame, (640, 480))
+        # 🔥 SMALL resolution = BIG performance boost
+        frame = cv2.resize(frame, (320, 240))
 
         frame_count += 1
 
-        # 🔥 Skip frames (VERY IMPORTANT)
+        # 🔥 Skip frames (reduces CPU load)
         if frame_count % FRAME_SKIP != 0:
             cv2.imshow("Live Attendance", frame)
             if cv2.waitKey(1) == 27:
@@ -57,14 +56,13 @@ def run_recognition_session():
         # 🔥 Convert to RGB
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+        # 🔥 Detect faces
         faces = detect_faces(rgb_frame)
 
-        # 🔥 Prevent overload (many faces = lag)
-        if len(faces) > 10:
-            cv2.imshow("Live Attendance", frame)
-            cv2.waitKey(1)
-            continue
+        # 🔥 Limit faces (avoid overload)
+        faces = faces[:3]
 
+        # 🔥 Encode
         encodings = encode_faces(rgb_frame, faces)
 
         for (top, right, bottom, left), face_encoding in zip(faces, encodings):
@@ -73,39 +71,38 @@ def run_recognition_session():
                 known_encodings, known_names, face_encoding
             )
 
-            # 🔥 Threshold tuning
-            if distance > 0.60:
+            # 🔥 Relax threshold for demo
+            if distance > 0.65:
                 name = "Unknown"
 
-            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
-
-            # 🔥 Mark attendance only for known
+            # 🔥 Mark attendance
             if name != "Unknown":
                 mark_attendance(name)
+
+            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
 
             # 🔥 Draw box
             cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
 
-            label = f"{name} ({round(distance, 2)})"
             cv2.putText(
                 frame,
-                label,
+                name,
                 (left, top - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
+                0.5,
                 color,
-                2,
+                1,
             )
 
         # 🔥 Show frame
         cv2.imshow("Live Attendance", frame)
 
-        # 🔥 MUST for UI (prevents freeze)
+        # 🔥 THIS prevents "Not Responding"
         if cv2.waitKey(1) == 27:
             break
 
-        # 🔥 Small delay → smooth UI
-        time.sleep(0.01)
+        # 🔥 Small delay keeps UI smooth
+        time.sleep(0.02)
 
     cap.release()
     cv2.destroyAllWindows()
