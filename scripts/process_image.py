@@ -25,7 +25,7 @@ if image is None:
     print("❌ Could not read image.")
     sys.exit(1)
 
-# 🔥 STEP 1: UPSCALE (important for group photos)
+# 🔥 STEP 1: Upscale image (important for group photos)
 image = cv2.resize(image, None, fx=1.8, fy=1.8)
 
 # 🔥 STEP 2: Convert to RGB
@@ -40,23 +40,33 @@ print(f"👥 Detected {len(faces)} face(s)")
 marked = []
 
 for (top, right, bottom, left), face_encoding in zip(faces, encodings):
+
     name, distance = find_best_match(known_encodings, known_names, face_encoding)
 
-    # 🔥 Real-world tolerant threshold
-    if distance > 0.55:
-        name = "Unknown"
+    # 🔥 DEBUG (helps you explain in demo)
+    print(f"DEBUG → {name}, Distance: {round(distance,3)}")
 
-    if name != "Unknown":
-        mark_attendance(name)
-        marked.append(name)
+    # 🔥 FINAL OPTIMIZED THRESHOLD LOGIC
+    if distance < 0.50:
+        final_name = name                     # strong match
+    elif distance < 0.65:
+        final_name = name                     # relaxed match (group photo)
+    else:
+        final_name = "Unknown"
 
-    # Draw bounding boxes
-    color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
+    # Mark attendance
+    if final_name != "Unknown":
+        mark_attendance(final_name)
+        if final_name not in marked:
+            marked.append(final_name)
+
+    # Draw bounding box
+    color = (0, 255, 0) if final_name != "Unknown" else (0, 0, 255)
 
     cv2.rectangle(image, (left, top), (right, bottom), color, 2)
     cv2.putText(
         image,
-        f"{name} ({round(distance, 2)})",
+        f"{final_name} ({round(distance,2)})",
         (left, top - 10),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,

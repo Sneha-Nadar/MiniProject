@@ -2,8 +2,8 @@ import face_recognition
 
 def detect_faces(image):
     try:
-        # 🔥 Best for group images (more accurate)
+        # 🔥 Best for group + real-world detection
         return face_recognition.face_locations(image, model="cnn")
     except:
-        # 🔥 Safe fallback (CPU friendly)
+        # 🔥 Safe fallback
         return face_recognition.face_locations(image, model="hog")
