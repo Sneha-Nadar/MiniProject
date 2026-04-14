@@ -13,14 +13,25 @@ with open("data/encodings/encodings.pkl", "rb") as f:
 
 def run_recognition_session():
     """Run a 60-second face recognition session."""
-    cap = cv2.VideoCapture(0)
+
+    print("Opening camera...")
+
+    # 🔥 FIX 1: Try multiple camera indices
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+
+    if not cap.isOpened():
+        print("❌ Camera not opening")
+        return
+
     print("🎥 Camera started (60 seconds)...")
 
     start_time = time.time()
     FRAME_HISTORY = 10
 
-    # FIX: per-face history dict keyed by position bucket
-    face_histories = {}  # key: x-bucket → list of names
+    face_histories = {}
+    marked_once = set()   # 🔥 FIX 2: avoid DB spam
 
     while True:
         if time.time() - start_time > 60:
@@ -29,21 +40,32 @@ def run_recognition_session():
 
         ret, frame = cap.read()
         if not ret:
+            print("❌ Frame not received")
             break
 
-        frame = cv2.resize(frame, (960, 720))
-        faces = detect_faces(frame)
-        encodings = encode_faces(frame, faces)
+        # 🔥 FIX 3: smaller frame (performance)
+        frame = cv2.resize(frame, (640, 480))
+
+        # 🔥 FIX 4: fix brightness
+        frame = cv2.convertScaleAbs(frame, alpha=0.8, beta=-30)
+
+        # 🔥 FIX 5: RGB conversion (VERY IMPORTANT)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        faces = detect_faces(rgb_frame)
+        encodings = encode_faces(rgb_frame, faces)
 
         for (top, right, bottom, left), face_encoding in zip(faces, encodings):
+
             name, distance = find_best_match(known_encodings, known_names, face_encoding)
 
-            if distance > 0.50:
+            # 🔥 FIX 6: better threshold
+            if distance > 0.65:
                 name = "Unknown"
 
-            # Use horizontal center bucket as face identity key
+            # Face tracking
             x_center = (left + right) // 2
-            bucket   = x_center // 100  # 100px wide buckets
+            bucket   = x_center // 100
 
             if bucket not in face_histories:
                 face_histories[bucket] = []
@@ -55,17 +77,27 @@ def run_recognition_session():
 
             stable_name = Counter(face_histories[bucket]).most_common(1)[0][0]
 
-            if stable_name != "Unknown":
+            # 🔥 FIX 7: avoid multiple attendance calls
+            if stable_name != "Unknown" and stable_name not in marked_once:
                 mark_attendance(stable_name)
+                marked_once.add(stable_name)
 
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            # Draw
+            color = (0, 255, 0) if stable_name != "Unknown" else (0, 0, 255)
+
+            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
             label = f"{stable_name} ({round(distance, 2)})"
+
             cv2.putText(frame, label, (left, top - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
         cv2.imshow("Live Attendance", frame)
-        if cv2.waitKey(1) == 27:
+
+        if cv2.waitKey(1) & 0xFF == 27:
             break
+
+        # 🔥 FIX 8: prevent freeze
+        time.sleep(0.01)
 
     cap.release()
     cv2.destroyAllWindows()
