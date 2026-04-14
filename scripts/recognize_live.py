@@ -14,19 +14,26 @@ with open("data/encodings/encodings.pkl", "rb") as f:
 def run_recognition_session():
     """Run a 60-second face recognition session."""
 
-    # 🔥 FIX 1: Use CAP_DSHOW (Windows fix)
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    print("Opening camera...")
 
-    # 🔥 FIX 2: Check camera
+    # 🔥 Try multiple camera indices
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if not cap.isOpened():
-        print("❌ Camera not opening")
+        print("Trying camera index 1...")
+        cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+
+    if not cap.isOpened():
+        print("❌ Camera not opening at all")
         return
 
-    print("🎥 Camera started (60 seconds)...")
+    print("✅ Camera started")
 
     start_time = time.time()
     FRAME_HISTORY = 10
     face_histories = {}
+
+    # 🔥 Prevent DB spam
+    marked_once = set()
 
     while True:
         if time.time() - start_time > 60:
@@ -38,10 +45,12 @@ def run_recognition_session():
             print("❌ Frame not received")
             break
 
-        # 🔥 FIX 3: Resize properly (not too small)
-        frame = cv2.resize(frame, (960, 720))
+        # 🔥 Reduce load (important)
+        frame = cv2.resize(frame, (640, 480))
 
-        # 🔥 FIX 4: Convert to RGB (VERY IMPORTANT)
+        # 🔥 Fix brightness
+        frame = cv2.convertScaleAbs(frame, alpha=0.8, beta=-30)
+
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         faces = detect_faces(rgb_frame)
@@ -51,11 +60,11 @@ def run_recognition_session():
 
             name, distance = find_best_match(known_encodings, known_names, face_encoding)
 
-            # 🔥 FIX 5: Better threshold for live
-            if distance > 0.60:
+            # 🔥 Better threshold
+            if distance > 0.65:
                 name = "Unknown"
 
-            # Face tracking bucket
+            # Face tracking
             x_center = (left + right) // 2
             bucket   = x_center // 100
 
@@ -69,8 +78,10 @@ def run_recognition_session():
 
             stable_name = Counter(face_histories[bucket]).most_common(1)[0][0]
 
-            if stable_name != "Unknown":
+            # 🔥 Prevent multiple DB writes
+            if stable_name != "Unknown" and stable_name not in marked_once:
                 mark_attendance(stable_name)
+                marked_once.add(stable_name)
 
             # Draw
             color = (0, 255, 0) if stable_name != "Unknown" else (0, 0, 255)
@@ -83,9 +94,11 @@ def run_recognition_session():
 
         cv2.imshow("Live Attendance", frame)
 
-        # ESC to exit
-        if cv2.waitKey(1) == 27:
+        if cv2.waitKey(1) & 0xFF == 27:
             break
+
+        # 🔥 Prevent freezing
+        time.sleep(0.01)
 
     cap.release()
     cv2.destroyAllWindows()
