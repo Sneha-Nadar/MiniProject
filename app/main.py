@@ -177,3 +177,161 @@ async def upload_image(
     background_tasks.add_task(process_image_function, image_path)
 
     return JSONResponse({"status": f"⏳ Processing started for '{file.filename}'"})
+# ── STUDENT PORTAL ─────────────────────────────────────────────────────────────
+
+# Default student password (change this or make per-student later)
+STUDENT_PASSWORD = "fcrit2026"
+
+@app.get("/student/login", response_class=HTMLResponse)
+async def student_login_page(request: Request):
+    if request.session.get("student_roll"):
+        return RedirectResponse("/student", status_code=302)
+    return templates.TemplateResponse("student_login.html",
+                                      {"request": request, "error": None})
+
+@app.post("/student/login", response_class=HTMLResponse)
+async def student_login_submit(request: Request,
+                                roll_no: str = Form(...),
+                                password: str = Form(...)):
+    # Validate roll number exists in dataset
+    dataset_path = os.path.join(BASE_DIR, "data", "datasets")
+    students = [n for n in os.listdir(dataset_path)
+                if os.path.isdir(os.path.join(dataset_path, n))]
+    matched = [s for s in students if s.startswith(roll_no + "_")]
+
+    if not matched or password != STUDENT_PASSWORD:
+        return templates.TemplateResponse("student_login.html",
+            {"request": request, "error": "Invalid Roll Number or Password"})
+
+    folder_name = matched[0]
+    name = folder_name.split("_", 1)[1]
+    request.session["student_roll"] = roll_no
+    request.session["student_name"] = name
+    return RedirectResponse("/student", status_code=302)
+
+@app.get("/student", response_class=HTMLResponse)
+async def student_portal(request: Request):
+    if not request.session.get("student_roll"):
+        return RedirectResponse("/student/login", status_code=302)
+    return templates.TemplateResponse("student.html", {"request": request})
+
+@app.get("/student/logout")
+async def student_logout(request: Request):
+    request.session.pop("student_roll", None)
+    request.session.pop("student_name", None)
+    return RedirectResponse("/student/login", status_code=302)
+
+@app.get("/student/dashboard")
+def student_dashboard(request: Request):
+    if not request.session.get("student_roll"):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    from app.database.db import SessionLocal
+    from app.database.models import AttendanceRecord
+    from collections import defaultdict
+
+    roll_no = request.session["student_roll"]
+    name    = request.session["student_name"]
+
+    db = SessionLocal()
+    try:
+        records = db.query(AttendanceRecord).filter_by(roll_no=roll_no).all()
+
+        # Count per subject
+        subject_counts = defaultdict(lambda: {"attended": 0, "total": 0})
+
+        # Total slots per subject (estimate from timetable — 2 slots per lecture)
+        # You can hardcode total expected lectures per subject here
+        all_subjects = set(r.subject for r in records)
+        for subj in all_subjects:
+            subj_records = [r for r in records if r.subject == subj]
+            subject_counts[subj]["attended"] = len(subj_records)
+            # Total = unique (date, lecture) pairs × 2 slots
+            unique_lectures = len(set((r.date, r.lecture) for r in subj_records))
+            # Approximate total conducted = attended (since we only have marked data)
+            # For real total, you'd track total conducted separately
+            subject_counts[subj]["total"] = max(len(subj_records), unique_lectures * 2)
+
+        subject_wise = {}
+        for subj, counts in subject_counts.items():
+            pct = round((counts["attended"] / counts["total"] * 100)
+                        if counts["total"] > 0 else 0, 1)
+            subject_wise[subj] = {
+                "attended":   counts["attended"],
+                "total":      counts["total"],
+                "percentage": pct
+            }
+
+        total_attended = len(records)
+        total_slots    = sum(v["total"] for v in subject_wise.values())
+        overall_pct    = round((total_attended / total_slots * 100)
+                               if total_slots > 0 else 0, 1)
+
+        return {
+            "roll_no":            roll_no,
+            "name":               name,
+            "total_attended":     total_attended,
+            "overall_percentage": overall_pct,
+            "subject_wise":       subject_wise
+        }
+    finally:
+        db.close()
+
+@app.get("/student/records")
+def student_records(request: Request, month: str = None):
+    if not request.session.get("student_roll"):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    from app.database.db import SessionLocal
+    from app.database.models import AttendanceRecord
+
+    roll_no = request.session["student_roll"]
+    db = SessionLocal()
+    try:
+        query = db.query(AttendanceRecord).filter_by(roll_no=roll_no)
+        if month:  # format: "2026-03"
+            query = query.filter(AttendanceRecord.date.like(f"{month}%"))
+        records = query.order_by(AttendanceRecord.date.desc()).all()
+        return [{"date": r.date, "time": r.time, "lecture": r.lecture,
+                 "slot": r.slot, "subject": r.subject} for r in records]
+    finally:
+        db.close()
+@app.get("/admin/defaulters")
+def get_defaulters(request: Request):
+    if not is_logged_in(request):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    from app.database.db import SessionLocal
+    from app.database.models import AttendanceRecord
+    from collections import defaultdict
+
+    db = SessionLocal()
+    try:
+        all_records = db.query(AttendanceRecord).all()
+
+        # Group by roll_no + subject
+        data = defaultdict(lambda: defaultdict(int))
+        names = {}
+        for r in all_records:
+            data[r.roll_no][r.subject] += 1
+            names[r.roll_no] = r.name
+
+        defaulters = []
+        for roll_no, subjects in data.items():
+            for subject, attended in subjects.items():
+                # Approximate total = attended * (1/expected_rate)
+                # For now flag anyone below 75% of their own max
+                total = max(attended, 20)  # assume min 20 slots per subject
+                pct = round(attended / total * 100, 1)
+                if pct < 75:
+                    defaulters.append({
+                        "roll_no":    roll_no,
+                        "name":       names[roll_no],
+                        "subject":    subject,
+                        "attended":   attended,
+                        "percentage": pct
+                    })
+
+        return sorted(defaulters, key=lambda x: x["percentage"])
+    finally:
+        db.close()
