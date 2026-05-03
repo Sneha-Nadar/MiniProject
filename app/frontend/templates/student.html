@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Portal | CognifAce</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Open Sans', sans-serif; background: #0f172a; color: #e2e8f0; margin:0; }
+    .fcrit-header { background:#fff; border-bottom:4px solid #8B1A1A; padding:10px 32px; display:flex; align-items:center; gap:18px; }
+    .fcrit-header img { width:60px; height:60px; object-fit:contain; }
+    .fcrit-header h1 { font-size:15px; font-weight:700; color:#8B1A1A; margin:0; }
+    .fcrit-nav { background:#8B1A1A; padding:9px 32px; display:flex; justify-content:space-between; align-items:center; }
+    .fcrit-nav span { color:#fff; font-weight:600; font-size:14px; }
+    .logout-btn { background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:5px 16px; border-radius:4px; font-size:12px; text-decoration:none; }
+    .content { max-width:1100px; margin:0 auto; padding:28px; }
+    .stat-card { background:#1e293b; border:1px solid #334155; border-top:3px solid #8B1A1A; border-radius:8px; padding:20px; text-align:center; }
+    .progress-bar { background:#334155; border-radius:999px; height:10px; overflow:hidden; margin-top:6px; }
+    .progress-fill { height:100%; border-radius:999px; transition:width 0.5s; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead tr { border-bottom:2px solid #8B1A1A; }
+    thead th { padding:10px 12px; text-align:left; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; }
+    tbody tr { border-bottom:1px solid #1e293b; transition:background 0.15s; }
+    tbody tr:hover { background:rgba(139,26,26,0.08); }
+    tbody td { padding:10px 12px; }
+    .badge { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:700; }
+    .badge-a { background:#14532d; color:#86efac; }
+    .badge-b { background:#3b0764; color:#c4b5fd; }
+    .badge-lec { background:#1e3a5f; color:#93c5fd; font-family:monospace; }
+    .muted { color:#64748b; }
+    .fcrit-footer { background:#8B1A1A; text-align:center; padding:10px; color:rgba(255,255,255,0.7); font-size:12px; margin-top:32px; }
+  </style>
+</head>
+<body>
+  <div class="fcrit-header">
+    <img src="/static/fcritlogo.png" alt="FCRIT">
+    <div>
+      <h1>Fr. C. Rodrigues Institute of Technology, Vashi</h1>
+      <p style="font-size:11px;color:#555;margin:0;">Department of Information Technology</p>
+    </div>
+  </div>
+  <div class="fcrit-nav">
+    <span>CognifAce — Student Attendance Portal</span>
+    <a href="/student/logout" class="logout-btn">Logout</a>
+  </div>
+
+  <div class="content">
+    <!-- Student Info Banner -->
+    <div style="background:#1e293b;border:1px solid #8B1A1A;border-left:5px solid #8B1A1A;border-radius:8px;padding:16px 24px;margin-bottom:24px;">
+      <p style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:1px;">Welcome</p>
+      <p id="studentName" style="font-size:22px;font-weight:700;color:#f5c842;font-family:'Merriweather',serif;">--</p>
+      <p id="studentRoll" style="font-size:13px;color:#cbd5e1;margin-top:2px;">Roll No: --</p>
+    </div>
+
+    <!-- Overall Stats -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;" id="statsGrid">
+      <div class="stat-card">
+        <p style="color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Overall Attendance</p>
+        <p id="overallPct" style="font-size:36px;font-weight:700;color:#f5c842;">--%</p>
+        <div class="progress-bar"><div id="overallBar" class="progress-fill" style="width:0%;background:#f5c842;"></div></div>
+      </div>
+      <div class="stat-card">
+        <p style="color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Classes Attended</p>
+        <p id="attended" style="font-size:36px;font-weight:700;color:#4ade80;">--</p>
+      </div>
+      <div class="stat-card">
+        <p style="color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Status</p>
+        <p id="statusLabel" style="font-size:18px;font-weight:700;">--</p>
+      </div>
+    </div>
+
+    <!-- Subject-wise Attendance -->
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <h2 style="font-size:16px;font-weight:600;color:#f5c842;margin-bottom:16px;">Subject-wise Attendance</h2>
+      <div id="subjectCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
+    </div>
+
+    <!-- Detailed Log -->
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 style="font-size:16px;font-weight:600;color:#f5c842;">Attendance Log</h2>
+        <input type="month" id="monthPicker" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:13px;" onchange="loadAttendance()">
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Subject</th><th>Lecture</th><th>Slot</th><th>Time</th></tr>
+          </thead>
+          <tbody id="attendanceTable">
+            <tr><td colspan="5" style="text-align:center;color:#475569;padding:24px;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="fcrit-footer">&copy; 2026 Fr. C. Rodrigues Institute of Technology, Vashi — CognifAce</div>
+
+<script>
+  // Set default month to current
+  const now = new Date();
+  document.getElementById('monthPicker').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  async function loadDashboard() {
+    const res  = await fetch('/student/dashboard');
+    const data = await res.json();
+
+    document.getElementById('studentName').textContent = data.name;
+    document.getElementById('studentRoll').textContent = `Roll No: ${data.roll_no}`;
+    document.getElementById('attended').textContent    = data.total_attended;
+
+    const pct = data.overall_percentage;
+    document.getElementById('overallPct').textContent = `${pct}%`;
+    document.getElementById('overallBar').style.width  = `${pct}%`;
+
+    const safe = pct >= 75;
+    const warn = pct >= 60 && pct < 75;
+    const statusEl = document.getElementById('statusLabel');
+    if (safe) { statusEl.textContent = 'Safe ✔'; statusEl.style.color = '#4ade80'; }
+    else if (warn) { statusEl.textContent = 'Warning ⚠'; statusEl.style.color = '#f5c842'; }
+    else { statusEl.textContent = 'Danger ✘'; statusEl.style.color = '#f87171'; }
+
+    // Subject cards
+    const container = document.getElementById('subjectCards');
+    container.innerHTML = '';
+    for (const [subject, info] of Object.entries(data.subject_wise)) {
+      const p = info.percentage;
+      const col = p >= 75 ? '#4ade80' : p >= 60 ? '#f5c842' : '#f87171';
+      container.innerHTML += `
+        <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;">
+          <p style="font-size:11px;color:#94a3b8;margin-bottom:6px;">${subject}</p>
+          <p style="font-size:22px;font-weight:700;color:${col};margin-bottom:6px;">${p}%</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:${col};"></div></div>
+          <p style="font-size:10px;color:#64748b;margin-top:6px;">${info.attended} / ${info.total} classes</p>
+        </div>`;
+    }
+  }
+
+  async function loadAttendance() {
+    const month = document.getElementById('monthPicker').value;
+    const res   = await fetch(`/student/records?month=${month}`);
+    const data  = await res.json();
+    const tbody = document.getElementById('attendanceTable');
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#475569;padding:24px;">No records for this month</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td class="muted">${r.date}</td>
+        <td style="color:#fde68a;">${r.subject}</td>
+        <td><span class="badge badge-lec">${r.lecture}</span></td>
+        <td><span class="badge ${r.slot==='A'?'badge-a':'badge-b'}">${r.slot}</span></td>
+        <td class="muted">${r.time}</td>
+      </tr>`).join('');
+  }
+
+  loadDashboard();
+  loadAttendance();
+</script>
+</body>
+</html>
