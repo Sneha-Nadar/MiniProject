@@ -1,7 +1,7 @@
 import cv2
 import face_recognition
 
-def detect_faces(image, model="cnn"):
+def detect_faces(image, model="hog"):
     """
     Detect faces using CNN model (more accurate than HOG).
     Use model="hog" for CPU-only if CNN is too slow on your machine.
